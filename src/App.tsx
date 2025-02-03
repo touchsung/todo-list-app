@@ -12,14 +12,15 @@ import {
 import todoList from "./data/todo.json";
 
 function App() {
-  const [mainList, setMainList] = useState<TodoItem[]>(todoList);
-  const [typeLists, setTypeLists] = useState<Record<string, TodoItem[]>>({});
+  const [typeLists, setTypeLists] = useState<Record<string, TodoItem[]>>({
+    main: todoList, // Initialize with main list
+  });
 
   const handleItemTransfer = {
     toTypeList: (item: TodoItem) => {
-      setMainList((prev) => filterOutItem(prev, item));
       setTypeLists((prev) => ({
         ...prev,
+        main: filterOutItem(prev.main, item),
         [item.type]: [...(prev[item.type] || []), addTimestamp(item)],
       }));
     },
@@ -28,8 +29,8 @@ function App() {
       setTypeLists((prev) => ({
         ...prev,
         [item.type]: filterOutItem(prev[item.type], item),
+        main: [...prev.main, removeTimestamp(item)],
       }));
-      setMainList((prev) => [...prev, removeTimestamp(item)]);
     },
   };
 
@@ -44,7 +45,7 @@ function App() {
           ...acc,
           [type]: [],
         }),
-        {}
+        { main: todoList } // Include main list in initialization
       );
     };
 
@@ -59,31 +60,29 @@ function App() {
       setTypeLists((prevTypeLists) => {
         let hasChanges = false;
         const newTypeLists = { ...prevTypeLists };
-        const expiredItems: TodoItem[] = [];
 
-        // Process each type list
+        // Process each type list except main
         Object.entries(prevTypeLists).forEach(([type, items]) => {
+          if (type === "main") return; // Skip main list
           const { expired, active } = filterItemsByTime(items, currentTime);
           if (expired.length > 0) {
             hasChanges = true;
             newTypeLists[type] = active;
-            expiredItems.push(...expired.map(removeTimestamp));
+            newTypeLists.main = [
+              ...newTypeLists.main,
+              ...expired.map(removeTimestamp),
+            ];
           }
         });
 
-        // Update main list if there are expired items
-        if (hasChanges) {
-          setMainList((prev) => [...prev, ...expiredItems]);
-          return newTypeLists;
-        }
-
-        return prevTypeLists;
+        return hasChanges ? newTypeLists : prevTypeLists;
       });
     };
 
     const timer = setInterval(processExpiredItems, 500);
     return () => clearInterval(timer);
   }, []);
+
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -99,7 +98,7 @@ function App() {
         >
           <TodoList
             title="Main List"
-            items={mainList}
+            items={typeLists.main}
             icon={FaListUl}
             bgColor="bg-blue-100"
             textColor="text-blue-700"
@@ -107,6 +106,7 @@ function App() {
           />
 
           {Object.entries(typeLists).map(([type, items]) => {
+            if (type === "main") return null; // Skip main list in this loop
             const config = getTypeConfig(type);
             return (
               <TodoList
