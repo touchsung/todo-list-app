@@ -79,7 +79,7 @@ function App() {
       });
     };
 
-    const timer = setInterval(processExpiredItems, 500);
+    const timer = setInterval(processExpiredItems, 1);
     return () => clearInterval(timer);
   }, []);
 
