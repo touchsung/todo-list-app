@@ -8,10 +8,9 @@ import {
   filterItemsByTime,
   filterOutItem,
   getTypeConfig,
+  getExpireTime,
 } from "./utils/todoUtils";
 import todoList from "./data/todo.json";
-
-const EXPIRE_TIME = 5000; // 5 seconds
 
 function App() {
   const [typeLists, setTypeLists] = useState<Record<string, TodoItem[]>>({
@@ -35,17 +34,13 @@ function App() {
       }));
     },
 
-    checkExpireTime: (time: number, expireTime: number) => {
+    checkExpireTime: (expireTime: number) => {
       setTypeLists((prev) => {
         const updatedLists = { ...prev };
         Object.entries(prev).forEach(([type, items]) => {
           if (type === "main") return;
 
-          const { expired, active } = filterItemsByTime(
-            items,
-            time,
-            expireTime
-          );
+          const { expired, active } = filterItemsByTime(items, expireTime);
           if (expired.length > 0) {
             updatedLists[type] = active;
             updatedLists.main = [
@@ -79,7 +74,7 @@ function App() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      handleItemTransfer.checkExpireTime(Date.now(), EXPIRE_TIME);
+      handleItemTransfer.checkExpireTime(getExpireTime());
     }, 1);
     return () => clearInterval(interval);
   }, []);

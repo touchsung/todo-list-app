@@ -5,6 +5,7 @@ import {
   filterItemsByTime,
   filterOutItem,
   getTypeConfig,
+  getExpireTime,
 } from "../todoUtils";
 import { FaAppleAlt, FaCarrot, FaBox } from "react-icons/fa";
 import { TodoItem } from "../../types/todo";
@@ -61,10 +62,7 @@ describe("todoUtils", () => {
     ];
 
     it("correctly separates expired and active items", () => {
-      const currentTime = Date.now();
-      const expireTime = 5000;
-      
-      const result = filterItemsByTime(items, currentTime, expireTime);
+      const result = filterItemsByTime(items, getExpireTime());
       
       expect(result.expired).toHaveLength(1);
       expect(result.expired[0].name).toBe("Apple");
@@ -78,14 +76,14 @@ describe("todoUtils", () => {
         { type: "Fruit", name: "Banana", timestamp: Date.now() },
       ];
       
-      const result = filterItemsByTime(itemsWithoutTimestamp, Date.now(), 5000);
+      const result = filterItemsByTime(itemsWithoutTimestamp, getExpireTime());
       
       expect(result.expired).toHaveLength(1);
       expect(result.expired[0].name).toBe("Apple");
     });
 
     it("handles empty array", () => {
-      const result = filterItemsByTime([], Date.now(), 5000);
+      const result = filterItemsByTime([], getExpireTime());
       
       expect(result.expired).toHaveLength(0);
       expect(result.active).toHaveLength(0);

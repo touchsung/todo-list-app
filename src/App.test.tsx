@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import App from "./App";
+import { getExpireTime } from "./utils/todoUtils";
 
 describe("App Integration Tests", () => {
   beforeEach(() => {
@@ -44,7 +45,7 @@ describe("App Integration Tests", () => {
 
     // Fast-forward time
     act(() => {
-      vi.advanceTimersByTime(5000);
+      vi.advanceTimersByTime(getExpireTime());
     });
 
     // Item should be back in main list

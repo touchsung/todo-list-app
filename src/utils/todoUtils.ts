@@ -1,6 +1,10 @@
 import { TodoItem, TypeConfig } from "../types/todo";
 import {  FaAppleAlt, FaCarrot, FaBox } from "react-icons/fa";
 
+export const getExpireTime = (): number => {
+  return 5000
+};
+
 export const addTimestamp = (item: TodoItem): TodoItem => ({
   ...item,
   timestamp: Date.now(),
@@ -13,14 +17,13 @@ export const removeTimestamp = ({ type, name }: TodoItem): TodoItem => ({
 
 export const filterItemsByTime = (
   items: TodoItem[],
-  currentTime: number,
   expireTime: number
 ): {
   expired: TodoItem[];
   active: TodoItem[];
 } => {
   const isExpired = (item: TodoItem) =>
-    currentTime - (item.timestamp || 0) >= expireTime;
+    Date.now() - (item.timestamp || 0) >= expireTime;
 
   return {
     expired: items.filter(isExpired),
