@@ -13,13 +13,14 @@ export const removeTimestamp = ({ type, name }: TodoItem): TodoItem => ({
 
 export const filterItemsByTime = (
   items: TodoItem[],
-  currentTime: number
+  currentTime: number,
+  expireTime: number
 ): {
   expired: TodoItem[];
   active: TodoItem[];
 } => {
   const isExpired = (item: TodoItem) =>
-    currentTime - (item.timestamp || 0) >= 5000;
+    currentTime - (item.timestamp || 0) >= expireTime;
 
   return {
     expired: items.filter(isExpired),

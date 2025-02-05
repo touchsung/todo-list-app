@@ -11,13 +11,15 @@ import {
 } from "./utils/todoUtils";
 import todoList from "./data/todo.json";
 
+const EXPIRE_TIME = 5000; // 5 seconds
+
 function App() {
   const [typeLists, setTypeLists] = useState<Record<string, TodoItem[]>>({
-    main: todoList, // Initialize with main list
+    main: todoList,
   });
 
   const handleItemTransfer = {
-    toTypeList: (item: TodoItem) => {
+    addToTypeList: (item: TodoItem) => {
       setTypeLists((prev) => ({
         ...prev,
         main: filterOutItem(prev.main, item),
@@ -25,16 +27,39 @@ function App() {
       }));
     },
 
-    toMainList: (item: TodoItem) => {
+    removeFromTypeList: (item: TodoItem) => {
       setTypeLists((prev) => ({
         ...prev,
         [item.type]: filterOutItem(prev[item.type], item),
         main: [...prev.main, removeTimestamp(item)],
       }));
     },
+
+    checkExpireTime: (time: number, expireTime: number) => {
+      setTypeLists((prev) => {
+        const updatedLists = { ...prev };
+        Object.entries(prev).forEach(([type, items]) => {
+          if (type === "main") return;
+
+          const { expired, active } = filterItemsByTime(
+            items,
+            time,
+            expireTime
+          );
+          if (expired.length > 0) {
+            updatedLists[type] = active;
+            updatedLists.main = [
+              ...updatedLists.main,
+              ...expired.map(removeTimestamp),
+            ];
+          }
+        });
+
+        return updatedLists;
+      });
+    },
   };
 
-  // Initialize lists
   useEffect(() => {
     const initializeTypeLists = (
       items: TodoItem[]
@@ -45,42 +70,18 @@ function App() {
           ...acc,
           [type]: [],
         }),
-        { main: todoList } // Include main list in initialization
+        { main: todoList }
       );
     };
 
     setTypeLists(initializeTypeLists(todoList));
   }, []);
 
-  // Timer effect
   useEffect(() => {
-    const processExpiredItems = () => {
-      const currentTime = Date.now();
-
-      setTypeLists((prevTypeLists) => {
-        let hasChanges = false;
-        const newTypeLists = { ...prevTypeLists };
-
-        // Process each type list except main
-        Object.entries(prevTypeLists).forEach(([type, items]) => {
-          if (type === "main") return; // Skip main list
-          const { expired, active } = filterItemsByTime(items, currentTime);
-          if (expired.length > 0) {
-            hasChanges = true;
-            newTypeLists[type] = active;
-            newTypeLists.main = [
-              ...newTypeLists.main,
-              ...expired.map(removeTimestamp),
-            ];
-          }
-        });
-
-        return hasChanges ? newTypeLists : prevTypeLists;
-      });
-    };
-
-    const timer = setInterval(processExpiredItems, 1);
-    return () => clearInterval(timer);
+    const interval = setInterval(() => {
+      handleItemTransfer.checkExpireTime(Date.now(), EXPIRE_TIME);
+    }, 1);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -102,11 +103,11 @@ function App() {
             icon={FaListUl}
             bgColor="bg-blue-100"
             textColor="text-blue-700"
-            onItemClick={handleItemTransfer.toTypeList}
+            onItemClick={handleItemTransfer.addToTypeList}
           />
 
           {Object.entries(typeLists).map(([type, items]) => {
-            if (type === "main") return null; // Skip main list in this loop
+            if (type === "main") return null;
             const config = getTypeConfig(type);
             return (
               <TodoList
@@ -117,7 +118,7 @@ function App() {
                 bgColor={config.bgColor}
                 textColor={config.textColor}
                 progressColor={config.progressColor}
-                onItemClick={handleItemTransfer.toMainList}
+                onItemClick={handleItemTransfer.removeFromTypeList}
                 showProgress
               />
             );
